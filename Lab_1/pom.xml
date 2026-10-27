@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>utm.tmps</groupId>
-    <artifactId>lab1-solid-portfolio</artifactId>
+    <artifactId>lab1-creational-patterns</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Lab 1 - SOLID Portfolio Valuation Engine</name>
-    <description>Academic implementation of SRP, OCP, and DIP in Modern Java</description>
+    <name>Lab 1 - Creational Design Patterns in Portfolio Management</name>
+    <description>UTM TMPS Lab 1: Comprehensive implementation of Creational Design Patterns</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

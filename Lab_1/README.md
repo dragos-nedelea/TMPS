@@ -1,25 +1,49 @@
-# TMPS Lab 1: Investment Portfolio Valuation Engine
+# TMPS Laboratory Work 1: Creational Design Patterns
 **Course:** Software Architecture and Design Patterns (TMPS)  
 **Institution:** Technical University of Moldova (UTM)  
-**Focus:** Academic Demonstration of 3 Core SOLID Principles (SRP, OCP, DIP)  
+**Author:** Daniel Nedelea  
 **Language:** Pure Java 17+ (No external runtime frameworks)
 
 ---
 
-## 1. Project Overview
+## 1. Objectives
 
-The **Investment Portfolio Valuation Engine** is an academic software project designed to model, evaluate, and report the fair market value of diverse financial asset classes (such as **Public Equities**, **P2P Debt Loans**, and **Cryptocurrencies**). 
-
-The application is architected from the ground up to strictly uphold three foundational SOLID design principles:
-1. **SRP (Single Responsibility Principle)**
-2. **OCP (Open/Closed Principle)**
-3. **DIP (Dependency Inversion Principle)**
-
-The design avoids framework "magic" (e.g. Spring DI reflection) in favor of explicit, pure Object-Oriented constructor injection, making the architecture clear and transparent for academic defense and evaluation.
+1. **Study and understand the Creational Design Patterns** and their role in abstracting, optimizing, and controlling the instantiation process.
+2. **Select an appropriate domain area** and model its core entities, attributes, and relationships.
+3. **Implement at least 3 Creational Design Patterns** (this project implements **all 6 classical creational patterns**: *Singleton, Builder, Factory Method, Abstract Factory, Prototype,* and *Object Pool*).
+4. **Structure the project cleanly** into modular packages (`client`, `domain.models`, `domain.factory`, `domain.builder`, `domain.singleton`, `domain.prototype`, `domain.pool`) adhering to pure object-oriented design and SOLID principles.
+5. **Verify correctness** through automated JUnit 5 test coverage and an interactive client demonstration.
 
 ---
 
-## 2. Architecture & Package Structure
+## 2. Domain Description
+
+The chosen domain is an **Institutional Investment Portfolio & Financial Asset Management Engine**.
+
+In financial systems, asset instantiation is complex and subject to strict invariants:
+- Market feeds and FX exchange rates must be synchronized across all calculations (**Singleton**).
+- Portfolio entities have numerous optional and mandatory parameters requiring step-by-step assembly and invariant verification (**Builder**).
+- Different asset classes (Stocks, Cryptocurrencies, P2P Loans) require specialized mathematical models and parameters (**Factory Method**).
+- Different financial jurisdictions (US SEC/FINRA vs European Union MiFID II/MiCA) enforce regional instrument suites, currencies, and regulatory disclosures (**Abstract Factory**).
+- Standard benchmark assets (e.g. S&P 500 tech blue-chips, AAA credit tranches) share complex baseline configurations, making template cloning vastly more efficient than manual re-specification (**Prototype**).
+- High-frequency portfolio valuation and stress-testing simulations require heavy calculation buffers that induce high Garbage Collection (GC) pauses if created repeatedly (**Object Pool**).
+
+---
+
+## 3. Implemented Creational Design Patterns
+
+| Pattern | Component | Problem Solved |
+| :--- | :--- | :--- |
+| **Singleton** | `MarketDataFeed` | Guarantees a single, thread-safe source of truth for foreign exchange conversion rates, benchmark indices, and risk-free rates across the entire application. |
+| **Builder** | `PortfolioBuilder` | Prevents telescopic constructors and invalid parameter combinations; enforces step-by-step invariant validation before creating an immutable `Portfolio`. |
+| **Factory Method** | `AssetFactory<T>`, `StockAssetFactory`, `CryptoAssetFactory`, `LoanAssetFactory` | Encapsulates the instantiation of specialized asset subclasses while decoupling client code from concrete implementations. |
+| **Abstract Factory** | `FinancialMarketFactory`, `USMarketFactory`, `EuropeanMarketFactory` | Produces coordinated families of related regional financial products (Equities, Debt, Digital Assets) tied to specific jurisdictions (USD vs EUR). |
+| **Prototype** | `Asset.cloneAsset()`, `AssetPrototypeRegistry` | Enables rapid cloning and customization of pre-configured benchmark asset templates without invoking complex constructors from scratch. |
+| **Object Pool** | `ValuationWorkerPool`, `ValuationWorker` | Recycles pre-allocated, memory-intensive calculator workers to eliminate allocation overhead and GC latency during frequent portfolio stress appraisals. |
+
+---
+
+## 4. Package Structure
 
 ```
 Lab_1/
@@ -30,146 +54,172 @@ Lab_1/
     │   └── java/
     │       └── tmps/
     │           └── portfolio/
-    │               ├── Main.java                        # Composition Root & Demonstration
-    │               ├── domain/                          # State & Invariants only (SRP)
-    │               │   ├── Asset.java                   # Base asset contract
-    │               │   ├── StockAsset.java              # Public equity domain record
-    │               │   ├── P2PLoanAsset.java            # P2P consumer debt record
-    │               │   ├── CryptoAsset.java             # Digital token record (OCP demo)
-    │               │   ├── Portfolio.java               # Container of owned assets
-    │               │   ├── ValuationResult.java         # Valuation outcome carrier
-    │               │   └── PortfolioReport.java         # Consolidated valuation model
-    │               ├── strategy/                        # Valuation logic & Strategy Pattern (OCP)
-    │               │   ├── ValuationStrategy.java       # Strategy interface
-    │               │   ├── StockValuationStrategy.java   # Dividend-adjusted pricing algorithm
-    │               │   ├── P2PLoanValuationStrategy.java # Actuarial risk-discounted algorithm
-    │               │   ├── CryptoValuationStrategy.java  # Net-of-gas-fee pricing algorithm
-    │               │   ├── ValuationStrategyProvider.java # Strategy lookup abstraction (DIP)
-    │               │   └── DefaultValuationStrategyRegistry.java # Dynamic strategy registry
-    │               ├── repository/                      # Persistence abstractions & storage (DIP)
-    │               │   ├── AssetRepository.java         # Persistence abstraction
-    │               │   └── InMemoryAssetRepository.java # Low-level in-memory storage
-    │               ├── export/                          # Output formatting & rendering (SRP/DIP)
-    │               │   ├── ReportExporter.java          # Output abstraction
-    │               │   ├── ConsoleReportExporter.java   # Formatted tabular console renderer
-    │               │   └── JsonReportExporter.java      # Plain-text JSON serialization
-    │               └── service/                         # High-level business orchestrator (DIP)
-    │                   └── PortfolioService.java        # Core orchestration engine
+    │               ├── Main.java                                   # Entry point & Composition Root
+    │               ├── client/
+    │               │   └── PortfolioApplication.java               # Execution scenario & demonstration
+    │               └── domain/
+    │                   ├── models/                                 # Domain entities & contracts
+    │                   │   ├── Asset.java                          # Asset interface extending Cloneable
+    │                   │   ├── AssetType.java                      # Category enumeration
+    │                   │   ├── StockAsset.java                     # Public corporate equity holding
+    │                   │   ├── CryptoAsset.java                    # Digital token / cryptocurrency holding
+    │                   │   ├── P2PLoanAsset.java                   # Fixed-income consumer debt holding
+    │                   │   └── Portfolio.java                      # Consolidated investor portfolio container
+    │                   ├── singleton/
+    │                   │   └── MarketDataFeed.java                 # Bill Pugh thread-safe Singleton
+    │                   ├── builder/
+    │                   │   └── PortfolioBuilder.java               # Fluent invariant-validating builder
+    │                   ├── factory/                                # Factory Method pattern
+    │                   │   ├── AssetFactory.java                   # Abstract creator
+    │                   │   ├── StockAssetFactory.java              # Concrete creator for stocks
+    │                   │   ├── CryptoAssetFactory.java             # Concrete creator for crypto
+    │                   │   ├── LoanAssetFactory.java               # Concrete creator for P2P debt
+    │                   │   └── regional/                           # Abstract Factory pattern
+    │                   │       ├── FinancialMarketFactory.java     # Abstract factory interface
+    │                   │       ├── USMarketFactory.java            # Concrete factory (USD / SEC suite)
+    │                   │       └── EuropeanMarketFactory.java      # Concrete factory (EUR / MiFID suite)
+    │                   ├── prototype/                              # Prototype pattern
+    │                   │   └── AssetPrototypeRegistry.java         # Benchmark prototype catalog & cloner
+    │                   └── pool/                                   # Object Pool pattern
+    │                       ├── ValuationWorker.java                # Recyclable worker resource
+    │                       └── ValuationWorkerPool.java            # Thread-safe worker queue & manager
     └── test/
         └── java/
             └── tmps/
                 └── portfolio/
-                    └── SolidPrinciplesTest.java         # Automated JUnit 5 test suite
+                    └── CreationalPatternsTest.java                 # 16 automated JUnit 5 tests
 ```
 
 ---
 
-## 3. SOLID Principles: In-Depth Implementation
+## 5. In-Depth Pattern Implementations
 
-### 3.1 Single Responsibility Principle (SRP)
-> *"A class should have one, and only one, reason to change."*
+### 5.1 Singleton Pattern (`MarketDataFeed.java`)
+Implemented using the **Bill Pugh Initialization-on-demand Holder Idiom**. The static inner class `Holder` is only loaded when `getInstance()` is explicitly invoked, ensuring zero runtime synchronization overhead while relying on JVM class-loading guarantees for thread-safety.
 
-In this engine, responsibilities are segregated into distinct modules:
+```java
+public final class MarketDataFeed {
+    private final Map<String, BigDecimal> exchangeRatesToUsd = new ConcurrentHashMap<>();
+    
+    private MarketDataFeed() {
+        if (Holder.INSTANCE != null) {
+            throw new IllegalStateException("MarketDataFeed instance already exists.");
+        }
+        exchangeRatesToUsd.put("USD", BigDecimal.ONE);
+        exchangeRatesToUsd.put("EUR", new BigDecimal("1.0850"));
+    }
 
-| Responsibility | Owning Component | Reason to Change | What it does NOT do |
-| :--- | :--- | :--- | :--- |
-| **Domain State & Invariants** | `domain.*` (`StockAsset`, `P2PLoanAsset`, etc.) | Changes in asset definition or validation rules (e.g., negative shares forbidden). | Never calculates values, queries DBs, or prints strings. |
-| **Valuation Math** | `strategy.*` (`StockValuationStrategy`, etc.) | Changes in financial pricing models (e.g. altering dividend formulas). | Never handles data persistence or presentation. |
-| **Output Presentation** | `export.*` (`ConsoleReportExporter`, `JsonReportExporter`) | Changes in report formatting or serialization destinations. | Never touches domain business rules. |
-| **Orchestration** | `service.PortfolioService` | Changes in high-level evaluation workflow. | Never hardcodes financial algorithms or storage engines. |
+    private static class Holder {
+        private static final MarketDataFeed INSTANCE = new MarketDataFeed();
+    }
 
----
-
-### 3.2 Open/Closed Principle (OCP)
-> *"Software entities should be open for extension, but closed for modification."*
-
-The valuation engine is designed so that new asset classes and novel pricing formulas can be added **without touching or recompiling existing service or strategy code**:
-
-1. The `ValuationStrategy` interface defines a polymorphic contract: `supports(Asset)` and `evaluate(Asset)`.
-2. The `DefaultValuationStrategyRegistry` maintains a dynamic registry of strategies.
-3. **OCP Demonstration in Action (`Main.java` & `SolidPrinciplesTest.java`):**
-   - The system starts with support for `StockAsset` and `P2PLoanAsset`.
-   - When introducing `CryptoAsset` and `CryptoValuationStrategy`:
-     - **0 lines** changed in `PortfolioService.java`
-     - **0 lines** changed in `StockValuationStrategy.java`
-     - **0 lines** changed in `P2PLoanValuationStrategy.java`
-   - The new strategy is simply registered into the registry:
-     ```java
-     strategyRegistry.register(new CryptoValuationStrategy());
-     ```
-   - The engine immediately values cryptocurrencies seamlessly!
+    public static MarketDataFeed getInstance() {
+        return Holder.INSTANCE;
+    }
+}
+```
 
 ---
 
-### 3.3 Dependency Inversion Principle (DIP)
-> *"High-level modules should not depend on low-level modules. Both should depend on abstractions. Abstractions should not depend on details; details should depend on abstractions."*
+### 5.2 Builder Pattern (`PortfolioBuilder.java`)
+Eliminates telescopic constructor anti-patterns. Guarantees that invalid domain states (e.g., blank investor names, invalid emails, negative cash balance) cannot be created.
 
-`PortfolioService` represents the high-level business workflow. It adheres to DIP as follows:
-
-1. **No concrete dependencies**: `PortfolioService` does **not** instantiate `new InMemoryAssetRepository()`, `new ConsoleReportExporter()`, or concrete strategies.
-2. **Depends solely on Abstractions**:
-   ```java
-   public class PortfolioService {
-       private final AssetRepository assetRepository;             // Abstraction
-       private final ValuationStrategyProvider strategyProvider; // Abstraction
-       private final ReportExporter reportExporter;              // Abstraction
-
-       public PortfolioService(
-               AssetRepository assetRepository,
-               ValuationStrategyProvider strategyProvider,
-               ReportExporter reportExporter
-       ) {
-           this.assetRepository = Objects.requireNonNull(assetRepository);
-           this.strategyProvider = Objects.requireNonNull(strategyProvider);
-           this.reportExporter = Objects.requireNonNull(reportExporter);
-       }
-       ...
-   }
-   ```
-3. **Inversion of Control via Composition Root**:
-   - `Main.java` serves as the manual **Composition Root** that instantiates implementations and injects them via constructor injection.
-   - If we want to switch persistence from in-memory to PostgreSQL or switch output from the console to JSON, **`PortfolioService` remains completely unchanged**.
+```java
+Portfolio portfolio = new PortfolioBuilder()
+        .withId("PORTFOLIO-ALPHA")
+        .withInvestor("Daniel Nedelea", "daniel.nedelea@isa.utm.md")
+        .withRiskProfile(Portfolio.RiskProfile.GROWTH)
+        .withBaseCurrency("USD")
+        .withCashBalance(new BigDecimal("25000.00"))
+        .addAsset(appleStock)
+        .addTag("Tech-Focus")
+        .build();
+```
 
 ---
 
-## 4. How to Compile and Run
+### 5.3 Factory Method Pattern (`AssetFactory<T>`)
+Defines an abstract creation method `createAsset(...)` implemented by specialized creator classes (`StockAssetFactory`, `CryptoAssetFactory`, `LoanAssetFactory`). Clients program against the abstract creator without directly coupling to constructor signatures or pricing defaults.
 
-### Option A: Using Maven (Recommended)
-Compile and run the complete showcase application:
+```java
+public abstract class AssetFactory<T extends Asset> {
+    public abstract T createAsset(String id, String symbolOrRef, double quantity, double priceOrRate);
+
+    public T issueAsset(String id, String symbolOrRef, double quantity, double priceOrRate) {
+        T asset = createAsset(id, symbolOrRef, quantity, priceOrRate);
+        System.out.printf("Issued %s [%s]%n", asset.getType(), asset.getName());
+        return asset;
+    }
+}
+```
+
+---
+
+### 5.4 Abstract Factory Pattern (`FinancialMarketFactory`)
+Coordinates the creation of families of related financial instruments tailored to specific jurisdictions. For example, `USMarketFactory` instantiates USD-denominated products on NASDAQ/NYSE, while `EuropeanMarketFactory` instantiates EUR-denominated products compliant with ESMA and MiFID II.
+
+```java
+public interface FinancialMarketFactory {
+    String getJurisdiction();
+    String getMarketCurrency();
+    StockAsset createBenchmarkEquity(String id, double quantity);
+    P2PLoanAsset createConsumerCredit(String id, String borrowerRef, double principal);
+    CryptoAsset createCompliantCrypto(String id, double amount);
+}
+```
+
+---
+
+### 5.5 Prototype Pattern (`AssetPrototypeRegistry.java`)
+Allows cloning complex, pre-vetted financial assets directly from memory rather than repeating extensive parameter validation and calculation configurations.
+
+```java
+// Clone an S&P 500 Microsoft template and customize holding quantity and ID
+StockAsset customStock = prototypeRegistry.cloneStock("SP500_MSFT", "MY-MSFT-01", 50.0);
+```
+
+---
+
+### 5.6 Object Pool Pattern (`ValuationWorkerPool.java`)
+Manages a fixed collection of reusable `ValuationWorker` instances via a thread-safe `BlockingQueue`. Eliminates CPU and memory allocation churn during heavy portfolio analysis:
+
+```java
+ValuationWorkerPool pool = new ValuationWorkerPool(2);
+ValuationWorker worker = pool.acquire(500); // Wait up to 500ms
+try {
+    ValuationReport report = worker.executeValuation(portfolio);
+} finally {
+    pool.release(worker); // State reset and returned to pool
+}
+```
+
+---
+
+## 6. How to Compile and Run
+
+### Running the Live Demonstration
+Execute from the `Lab_1` directory using Maven:
 ```bash
-mvn clean compile exec:java
+mvn compile exec:java
 ```
 
-Execute automated JUnit 5 test suite:
+### Running Automated Unit Tests
+Execute the full test suite:
 ```bash
 mvn test
 ```
 
-### Option B: Using Pure `javac` & `java` (Zero Tools)
-Compile all Java sources into an output folder:
-```bash
-javac -d out $(find src/main/java -name "*.java")
-```
-
-Run the application:
-```bash
-java -cp out tmps.portfolio.Main
+Expected result:
+```text
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
 ```
 
 ---
 
-## 5. Lab Defense Guide (Academic Cheat Sheet)
+## 7. Conclusions
 
-When defending Lab 1 before your lab instructor or professor at UTM, focus on these key talking points:
-
-### Defense Point 1: How did you implement SRP?
-- **Answer:** *"In our domain models (like `StockAsset` and `P2PLoanAsset`), we only encapsulate state and validate basic invariants (e.g., verifying that shares > 0 and risk is within 0–100%). We deliberately excluded valuation algorithms and serialization logic from them. The valuation math is isolated in `ValuationStrategy` classes, and the rendering logic is encapsulated in `ReportExporter` classes. If the console table layout needs to change, only `ConsoleReportExporter` changes, without touching financial math or domain classes."*
-
-### Defense Point 2: How did you prove OCP?
-- **Answer:** *"We used the Strategy Pattern coupled with a dynamic strategy provider (`ValuationStrategyProvider`). In `Main.java` (and in our JUnit tests), we demonstrate that we can introduce a third asset class—`CryptoAsset` with `CryptoValuationStrategy`—without modifying a single existing line of code in `PortfolioService`, `StockValuationStrategy`, or `P2PLoanValuationStrategy`. The system is open for extension via new strategies, but closed for modification."*
-
-### Defense Point 3: How does DIP differ from Dependency Injection (DI)?
-- **Answer:** *"Dependency Injection is a mechanical technique (passing dependencies via constructor/setter), whereas DIP is an architectural principle stating that high-level policies must not depend on low-level details. In our code, `PortfolioService` (high-level) only knows about the interfaces `AssetRepository`, `ValuationStrategyProvider`, and `ReportExporter`. Low-level details like `InMemoryAssetRepository` or `ConsoleReportExporter` implement those interfaces. We then use Constructor Injection to fulfill the DIP requirement without any framework dependency."*
-
-### Defense Point 4: Why are domain models implemented as Java Records?
-- **Answer:** *"Java Records provide transparent, immutable data carriers with concise syntax. By enforcing validation in the record's compact constructor, we guarantee domain invariants without cluttering the model with boilerplate getters, `equals`, or mutable state, reinforcing SRP."*
+By implementing the creational design patterns in this project:
+1. **Object creation logic was entirely decoupled** from core business execution, satisfying the Single Responsibility and Open/Closed principles.
+2. **System consistency and thread-safety** were guaranteed via the Bill Pugh Singleton for market data and the Object Pool for reusable calculation contexts.
+3. **Domain invariant safety and extensibility** were achieved using the Builder and Prototype patterns, dramatically simplifying client-side construction and cloning of intricate financial portfolios.
